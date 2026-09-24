@@ -1,0 +1,8 @@
+{
+  "name": "Remix Cost Calculator",
+  "description": "An app to calculate driving costs including mileage, time, and additional expenses. Remix for cosmetic changes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
