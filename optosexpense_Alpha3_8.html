@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cost Calculator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Immediate theme check to prevent white flash in dark vehicle cabs -->
+    <script>
+        (function() {
+            const saved = localStorage.getItem('costCalc_theme');
+            if (saved === 'dark' || saved === 'light') {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        })();
+    </script>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --panel-bg: #f1f5f9;
+            --sub-box-bg: #f8fafc;
+            --input-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #059669;
+            --success-hover: #047857;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --border-color: #e2e8f0;
+            --border-strong: #cbd5e1;
+            --border-focus: #3b82f6;
+            --btn-secondary-bg: #e2e8f0;
+            --btn-secondary-hover: #cbd5e1;
+            --btn-secondary-text: #0f172a;
+            --badge-bg: #f1f5f9;
+            --badge-text: #64748b;
+            --badge-rate-bg: #eff6ff;
+            --badge-rate-text: #1e40af;
+            --badge-rate-border: #bfdbfe;
+            --danger-subtle-bg: #fee2e2;
+            --danger-subtle-text: #991b1b;
+            --danger-alert-bg: #fef2f2;
+            --danger-alert-border: #fecaca;
+            --dropdown-bg: #ffffff;
+            --dropdown-border: #e2e8f0;
+            --dropdown-hover: #2563eb;
+            --dropdown-hover-text: #ffffff;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+            --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        /* High-contrast Night & Dark Mode */
+        [data-theme="dark"] {
+            --bg-color: #0b0f19;
+            --card-bg: #131b2e;
+            --panel-bg: #19233c;
+            --sub-box-bg: #0f172a;
+            --input-bg: #0b0f19;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #60a5fa;
+            --success: #10b981;
+            --success-hover: #34d399;
+            --danger: #f87171;
+            --danger-hover: #ef4444;
+            --border-color: #24324f;
+            --border-strong: #33466d;
+            --border-focus: #60a5fa;
+            --btn-secondary-bg: #1e293b;
+            --btn-secondary-hover: #2e3d55;
+            --btn-secondary-text: #f1f5f9;
+            --badge-bg: #1e293b;
+            --badge-text: #94a3b8;
+            --badge-rate-bg: #172554;
+            --badge-rate-text: #93c5fd;
+            --badge-rate-border: #1e40af;
+            --danger-subtle-bg: #451010;
+            --danger-subtle-text: #fca5a5;
+            --danger-alert-bg: #361010;
+            --danger-alert-border: #7f1d1d;
+            --dropdown-bg: #131b2e;
+            --dropdown-border: #24324f;
+            --dropdown-hover: #2563eb;
+            --dropdown-hover-text: #ffffff;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Automatic system matching when no explicit preference is set */
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg-color: #0b0f19;
+                --card-bg: #131b2e;
+                --panel-bg: #19233c;
+                --sub-box-bg: #0f172a;
+                --input-bg: #0b0f19;
+                --text-main: #f8fafc;
+                --text-muted: #94a3b8;
+                --primary: #3b82f6;
+                --primary-hover: #60a5fa;
+                --success: #10b981;
+                --success-hover: #34d399;
+                --danger: #f87171;
+                --danger-hover: #ef4444;
+                --border-color: #24324f;
+                --border-strong: #33466d;
+                --border-focus: #60a5fa;
+                --btn-secondary-bg: #1e293b;
+                --btn-secondary-hover: #2e3d55;
+                --btn-secondary-text: #f1f5f9;
+                --badge-bg: #1e293b;
+                --badge-text: #94a3b8;
+                --badge-rate-bg: #172554;
+                --badge-rate-text: #93c5fd;
+                --badge-rate-border: #1e40af;
+                --danger-subtle-bg: #451010;
+                --danger-subtle-text: #fca5a5;
+                --danger-alert-bg: #361010;
+                --danger-alert-border: #7f1d1d;
+                --dropdown-bg: #131b2e;
+                --dropdown-border: #24324f;
+                --dropdown-hover: #2563eb;
+                --dropdown-hover-text: #ffffff;
+                --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+                --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px 16px;
+            line-height: 1.5;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .app-wrapper {
+            max-width: 940px;
+            margin: 0 auto;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header-row h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .theme-toggle-btn {
+            background-color: var(--btn-secondary-bg);
+            color: var(--btn-secondary-text);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            padding: 8px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle-btn:hover {
+            background-color: var(--btn-secondary-hover);
+        }
+
+        .settings-toggle-btn {
+            background-color: var(--btn-secondary-bg);
+            color: var(--btn-secondary-text);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            padding: 8px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .settings-toggle-btn:hover {
+            background-color: var(--btn-secondary-hover);
+        }
+
+        /* Animated Collapsible Settings Box */
+        .settings-box {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            background-color: var(--panel-bg);
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            padding: 0 16px;
+            margin-bottom: 0;
+            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), 
+                        opacity 0.25s ease, 
+                        padding 0.35s ease, 
+                        margin 0.35s ease,
+                        border-color 0.35s ease;
+        }
+
+        .settings-box.is-open {
+            max-height: 400px;
+            opacity: 1;
+            border-color: var(--border-color);
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .settings-box p {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+        }
+
+        .rate-inputs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .rate-field { flex: 1; }
+
+        .setting-field {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        .setting-field .input-btn-group {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .setting-field .autocomplete-container { flex: 1; margin-bottom: 0; }
+
+        /* Responsive Layout Grid */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        @media (min-width: 820px) {
+            .app-layout {
+                grid-template-columns: 1.15fr 0.85fr;
+                align-items: start;
+            }
+            .receipt-column {
+                position: sticky;
+                top: 24px;
+            }
+        }
+
+        /* Card Containers */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .input-group:last-of-type {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        input[type="number"], input[type="text"] {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            font-size: 14px;
+            padding: 10px 12px;
+            color: var(--text-main);
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease, color 0.2s ease;
+        }
+
+        input[type="number"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Auto-Calculate Box */
+        .auto-calc-box {
+            background-color: var(--sub-box-bg);
+            padding: 14px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+
+        .auto-calc-box p {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .autocomplete-container { position: relative; margin-bottom: 8px; }
+        .autocomplete-container input { margin-bottom: 0; }
+
+        .autocomplete-items {
+            position: absolute;
+            z-index: 100;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--dropdown-bg);
+            border: 1px solid var(--dropdown-border);
+            border-top: none;
+            border-radius: 0 0 var(--radius-md) var(--radius-md);
+            max-height: 220px;
+            overflow-y: auto;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+        }
+
+        .autocomplete-items div {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+            color: var(--text-main);
+        }
+
+        .autocomplete-items div:hover, .autocomplete-items div.autocomplete-active {
+            background-color: var(--dropdown-hover) !important;
+            color: var(--dropdown-hover-text) !important;
+        }
+
+        .action-row { display: flex; gap: 8px; margin-top: 8px; }
+
+        button {
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .find-btn {
+            background-color: var(--primary);
+            color: white;
+            font-size: 14px;
+            padding: 11px;
+            flex: 2;
+        }
+
+        .find-btn:hover { background-color: var(--primary-hover); }
+        .find-btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+
+        .reset-btn {
+            background-color: var(--btn-secondary-bg);
+            color: var(--btn-secondary-text);
+            border: 1px solid var(--border-strong);
+            font-size: 14px;
+            padding: 11px;
+            flex: 1;
+        }
+
+        .reset-btn:hover { background-color: var(--btn-secondary-hover); }
+
+        .save-btn {
+            background-color: var(--success);
+            color: white;
+            padding: 8px 14px;
+            font-size: 13px;
+        }
+        .save-btn:hover { background-color: var(--success-hover); }
+
+        .sub-btn {
+            background-color: var(--btn-secondary-bg);
+            color: var(--btn-secondary-text);
+            border: 1px solid var(--border-strong);
+            padding: 8px 12px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .sub-btn:hover { background-color: var(--btn-secondary-hover); }
+
+        #errorBox {
+            color: var(--danger-subtle-text);
+            background: var(--danger-alert-bg);
+            border: 1px solid var(--danger-alert-border);
+            padding: 10px;
+            border-radius: var(--radius-md);
+            margin-top: 10px;
+            display: none;
+            font-size: 13px;
+        }
+
+        .save-status {
+            font-size: 12px;
+            color: var(--success);
+            font-weight: 600;
+            margin-top: 6px;
+            display: none;
+        }
+
+        /* Expenses Rows */
+        .expense-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .expense-row input[type="text"] { flex: 2; margin-bottom: 0; }
+        .expense-row input[type="number"] { flex: 1; margin-bottom: 0; }
+        .remove-btn {
+            background-color: var(--danger-subtle-bg);
+            color: var(--danger-subtle-text);
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+        }
+        .remove-btn:hover {
+            background-color: var(--danger-hover);
+            color: #ffffff;
+        }
+
+        .add-btn {
+            background-color: var(--panel-bg);
+            color: var(--primary);
+            border: 1px dashed var(--border-strong);
+            padding: 10px;
+            font-size: 13px;
+            width: 100%;
+            margin-top: 6px;
+        }
+        .add-btn:hover {
+            background-color: var(--btn-secondary-hover);
+            border-color: var(--primary);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 9999px;
+            background-color: var(--badge-bg);
+            color: var(--badge-text);
+            letter-spacing: 0.02em;
+        }
+        .badge-rate {
+            background-color: var(--badge-rate-bg);
+            color: var(--badge-rate-text);
+            border: 1px solid var(--badge-rate-border);
+        }
+
+        /* Ledger / Receipt Breakdown */
+        .receipt-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .receipt-header {
+            font-size: 16px;
+            font-weight: 700;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ledger-item {
+            padding: 12px 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .ledger-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .ledger-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .ledger-math {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.55;
+            margin-top: 4px;
+        }
+
+        .ledger-amount {
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--text-main);
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .ledger-total {
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 2px dashed var(--border-strong);
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .ledger-total-label {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .ledger-total-amount {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--success);
+        }
+
+        .copy-btn {
+            background-color: var(--btn-secondary-bg);
+            color: var(--btn-secondary-text);
+            border: 1px solid var(--border-strong);
+            font-size: 14px;
+            width: 100%;
+            padding: 12px;
+            margin-top: 16px;
+            border-radius: var(--radius-md);
+            display: none;
+        }
+        .copy-btn:hover { background-color: var(--btn-secondary-hover); }
+        .copy-btn.success {
+            background-color: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <div class="header-row">
+            <h1>Cost Calculator</h1>
+            <div class="header-controls">
+                <button type="button" id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle Theme">🌙 Dark</button>
+                <button type="button" id="settingsToggleBtn" class="settings-toggle-btn">⚙️ Settings</button>
+            </div>
+        </div>
+
+        <!-- Animated Collapsible Settings Panel -->
+        <div id="rateSettingsBox" class="settings-box">
+            <p>Pricing & Location Configuration</p>
+            <div class="rate-inputs">
+                <div class="rate-field">
+                    <label for="customMileRate">Rate / Mile ($)</label>
+                    <input type="number" id="customMileRate" value="0.725" step="0.001">
+                </div>
+                <div class="rate-field">
+                    <label for="customHourRate">Rate / Hour ($)</label>
+                    <input type="number" id="customHourRate" value="37.50" step="0.50">
+                </div>
+            </div>
+
+            <div class="setting-field">
+                <label for="defaultStartInput">Default Starting Address</label>
+                <div class="input-btn-group">
+                    <div class="autocomplete-container">
+                        <input type="text" id="defaultStartInput" placeholder="e.g., 66204 Overland Park, KS" autocomplete="off">
+                        <div id="defaultStartList" class="autocomplete-items"></div>
+                    </div>
+                    <button type="button" id="saveDefaultStartBtn" class="save-btn">Save</button>
+                    <button type="button" id="useCurrentStartBtn" class="sub-btn" title="Fill with value from current start input">Use Current</button>
+                </div>
+                <div id="saveStatus" class="save-status">Saved as default!</div>
+            </div>
+        </div>
+
+        <div class="app-layout">
+            <!-- Left Column: Inputs & Routing Form -->
+            <div class="form-column">
+                <div class="card">
+                    <div class="input-group">
+                        <label>Route Auto-Calculator:</label>
+                        <div class="auto-calc-box">
+                            <p>Enter Address or US ZIP</p>
+                            <div class="autocomplete-container">
+                                <input type="text" id="startLoc" placeholder="Start (e.g., 66204)" autocomplete="off">
+                                <div id="startList" class="autocomplete-items"></div>
+                            </div>
+                            <div class="autocomplete-container">
+                                <input type="text" id="endLoc" placeholder="End (e.g., Kansas City, MO)" autocomplete="off">
+                                <div id="endList" class="autocomplete-items"></div>
+                            </div>
+                            <div class="action-row">
+                                <button type="button" class="find-btn" id="distBtn">Calculate Route</button>
+                                <button type="button" class="reset-btn" id="resetBtn">Reset</button>
+                            </div>
+                            <div id="errorBox"></div>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="miles">Miles (One Way):</label>
+                        <input type="number" id="miles" placeholder="0.0" step="0.5">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="hours">Hours (One Way):</label>
+                        <input type="number" id="hours" placeholder="0.0" step="0.5">
+                    </div>
+
+                    <div class="input-group">
+                        <label>Additional Expenses (Optional):</label>
+                        <div id="additional-expenses-container"></div>
+                        <button type="button" id="addExpenseBtn" class="add-btn">+ Add Expense Item</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Receipt / Ledger Breakdown -->
+            <div class="receipt-column">
+                <div class="receipt-card">
+                    <div class="receipt-header">
+                        <span>Cost Breakdown</span>
+                    </div>
+                    <div id="breakdown">
+                        <span style="color: var(--text-muted); font-size: 13px;">Enter values to see the math breakdown.</span>
+                    </div>
+                    <button type="button" id="copyBtn" class="copy-btn">Copy to Clipboard</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DEDUCTIBLE_MILES = 30.0;
+        const DRIVE_TIME_ADJUSTMENT = 0.81;
+        const FALLBACK_START_ADDRESS = "";
+
+        const currencyFormatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        const rateFormatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 4
+        });
+
+        const wholeNumberFormatter = new Intl.NumberFormat('en-US', {
+            maximumFractionDigits: 0
+        });
+
+        const geocodeCache = new Map();
+        let autocompleteController = null;
+        let routeController = null;
+        let debounceTimer = null;
+        let nextExpenseId = 1;
+
+        const state = {
+            miles: 0,
+            hours: 0,
+            mileRate: 0.725,
+            hourRate: 37.50,
+            expenses: []
+        };
+
+        // Theme management
+        function isCurrentlyDarkMode() {
+            const attr = document.documentElement.getAttribute('data-theme');
+            if (attr === 'dark') return true;
+            if (attr === 'light') return false;
+            return window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+
+        function updateThemeToggleButton() {
+            const btn = document.getElementById('themeToggleBtn');
+            if (!btn) return;
+            const isDark = isCurrentlyDarkMode();
+            btn.innerHTML = isDark ? '☀️ Light' : '🌙 Dark';
+            btn.title = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+        }
+
+        function toggleTheme() {
+            const isDark = isCurrentlyDarkMode();
+            const nextTheme = isDark ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', nextTheme);
+            localStorage.setItem('costCalc_theme', nextTheme);
+            updateThemeToggleButton();
+        }
+
+        // Rounds up to the next half or whole unit (.0 or .5)
+        function roundUpToHalfUnit(val) {
+            if (!val || isNaN(val) || val <= 0) return 0;
+            return Math.ceil(Number(val.toFixed(4)) * 2) / 2;
+        }
+
+        function renderCalculation() {
+            if (state.miles === 0 && state.hours === 0 && state.expenses.length === 0) {
+                document.getElementById('breakdown').innerHTML = '<span style="color: var(--text-muted); font-size: 13px;">Enter values to see the math breakdown.</span>';
+                document.getElementById('copyBtn').style.display = 'none';
+                return;
+            }
+
+            const roundtripMultiplier = 2;
+            const milesTotal = Math.ceil(state.miles * roundtripMultiplier);
+            const billableMiles = Math.ceil(Math.max(0, milesTotal - DEDUCTIBLE_MILES));
+            const totalMileCost = billableMiles * state.mileRate;
+
+            const billableHours = Math.ceil(state.hours * roundtripMultiplier);
+            const totalHourCost = billableHours * state.hourRate;
+
+            let deductionText = "";
+            if (milesTotal > 0 && milesTotal < DEDUCTIBLE_MILES) {
+                deductionText = `${wholeNumberFormatter.format(milesTotal)} - ${wholeNumberFormatter.format(milesTotal)} non-billable (capped at ${wholeNumberFormatter.format(milesTotal)} mi) = ${wholeNumberFormatter.format(billableMiles)} billable miles`;
+            } else {
+                deductionText = `${wholeNumberFormatter.format(milesTotal)} - ${DEDUCTIBLE_MILES.toFixed(0)} non-billable = ${wholeNumberFormatter.format(billableMiles)} billable miles`;
+            }
+
+            let totalAdditionalCost = 0;
+            let expenseItemsHtml = "";
+            state.expenses.forEach(exp => {
+                if (exp.cost > 0) {
+                    const name = exp.name || "Item";
+                    totalAdditionalCost += exp.cost;
+                    expenseItemsHtml += `${name}: ${currencyFormatter.format(exp.cost)}<br>`;
+                }
+            });
+
+            const grandTotal = totalMileCost + totalHourCost + totalAdditionalCost;
+
+            const milesBlock = `
+                <div class="ledger-item">
+                    <div class="ledger-main">
+                        <div class="ledger-desc">
+                            <div class="ledger-title">
+                                Mileage Cost 
+                                <span class="badge badge-rate">${rateFormatter.format(state.mileRate)}/mi</span>
+                            </div>
+                            <div class="ledger-math">
+                                ${state.miles.toFixed(1)} One Way miles × 2 = ${wholeNumberFormatter.format(milesTotal)} RT total miles<br>
+                                ${deductionText}<br>
+                                ${wholeNumberFormatter.format(billableMiles)} billable miles × ${rateFormatter.format(state.mileRate)}
+                            </div>
+                        </div>
+                        <div class="ledger-amount">${currencyFormatter.format(totalMileCost)}</div>
+                    </div>
+                </div>`;
+
+            const hoursBlock = `
+                <div class="ledger-item">
+                    <div class="ledger-main">
+                        <div class="ledger-desc">
+                            <div class="ledger-title">
+                                Driving Time 
+                                <span class="badge badge-rate">${currencyFormatter.format(state.hourRate)}/hr</span>
+                            </div>
+                            <div class="ledger-math">
+                                ${state.hours.toFixed(1)} One Way hrs × 2 = ${wholeNumberFormatter.format(billableHours)} billable hours<br>
+                                ${wholeNumberFormatter.format(billableHours)} billable hrs × ${currencyFormatter.format(state.hourRate)}/hr
+                            </div>
+                        </div>
+                        <div class="ledger-amount">${currencyFormatter.format(totalHourCost)}</div>
+                    </div>
+                </div>`;
+
+            const expensesBlock = totalAdditionalCost > 0 ? `
+                <div class="ledger-item">
+                    <div class="ledger-main">
+                        <div class="ledger-desc">
+                            <div class="ledger-title">Additional Expenses</div>
+                            <div class="ledger-math">${expenseItemsHtml}</div>
+                        </div>
+                        <div class="ledger-amount">${currencyFormatter.format(totalAdditionalCost)}</div>
+                    </div>
+                </div>` : '';
+
+            const grandTotalBlock = `
+                <div class="ledger-total">
+                    <span class="ledger-total-label">Grand Total</span>
+                    <span class="ledger-total-amount">${currencyFormatter.format(grandTotal)}</span>
+                </div>`;
+
+            document.getElementById('breakdown').innerHTML = milesBlock + hoursBlock + expensesBlock + grandTotalBlock;
+            document.getElementById('copyBtn').style.display = 'block';
+        }
+
+        function addExpenseRow() {
+            const id = nextExpenseId++;
+            state.expenses.push({ id, name: '', cost: 0 });
+
+            const container = document.getElementById('additional-expenses-container');
+            const row = document.createElement('div');
+            row.className = 'expense-row';
+            row.dataset.id = id;
+            row.innerHTML = `
+                <input type="text" class="expense-name" placeholder="Item (e.g. Tolls)">
+                <input type="number" class="expense-cost" placeholder="$0.00" step="0.01">
+                <button type="button" class="remove-btn" title="Remove Item">✕</button>
+            `;
+            container.appendChild(row);
+            row.querySelector('.expense-name').focus();
+        }
+
+        function showError(msg) {
+            const box = document.getElementById('errorBox');
+            box.innerText = msg;
+            box.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('errorBox').style.display = 'none';
+        }
+
+        function toggleRateSettings() {
+            const box = document.getElementById('rateSettingsBox');
+            box.classList.toggle('is-open');
+        }
+
+        function saveRatesAndRecalculate() {
+            const mileRate = parseFloat(document.getElementById('customMileRate').value) || 0;
+            const hourRate = parseFloat(document.getElementById('customHourRate').value) || 0;
+            
+            state.mileRate = mileRate;
+            state.hourRate = hourRate;
+
+            localStorage.setItem('costCalc_mileRate', mileRate.toString());
+            localStorage.setItem('costCalc_hourRate', hourRate.toString());
+            renderCalculation();
+        }
+
+        function saveDefaultStartLocation() {
+            const newAddress = document.getElementById('defaultStartInput').value.trim();
+            localStorage.setItem('costCalc_startAddress', newAddress);
+
+            const startInput = document.getElementById('startLoc');
+            startInput.value = newAddress;
+            startInput.removeAttribute('data-lat');
+            startInput.removeAttribute('data-lon');
+
+            const status = document.getElementById('saveStatus');
+            status.innerText = newAddress ? "Saved as default start address!" : "Default start address cleared!";
+            status.style.display = 'block';
+            setTimeout(() => { status.style.display = 'none'; }, 2500);
+        }
+
+        function useCurrentStartLocation() {
+            const currentVal = document.getElementById('startLoc').value.trim();
+            document.getElementById('defaultStartInput').value = currentVal;
+            saveDefaultStartLocation();
+        }
+
+        function resetCalculator() {
+            hideError();
+            if (autocompleteController) autocompleteController.abort();
+            if (routeController) routeController.abort();
+
+            const savedStart = localStorage.getItem('costCalc_startAddress') ?? FALLBACK_START_ADDRESS;
+            const startInput = document.getElementById('startLoc');
+            startInput.value = savedStart;
+            startInput.removeAttribute('data-lat');
+            startInput.removeAttribute('data-lon');
+
+            const endInput = document.getElementById('endLoc');
+            endInput.value = '';
+            endInput.removeAttribute('data-lat');
+            endInput.removeAttribute('data-lon');
+
+            document.getElementById('startList').innerHTML = '';
+            document.getElementById('endList').innerHTML = '';
+            document.getElementById('defaultStartList').innerHTML = '';
+
+            document.getElementById('miles').value = '';
+            document.getElementById('hours').value = '';
+            document.getElementById('additional-expenses-container').innerHTML = '';
+
+            state.miles = 0;
+            state.hours = 0;
+            state.expenses = [];
+
+            renderCalculation();
+        }
+
+        function formatCleanAddress(item) {
+            if (!item.address) return item.display_name;
+            const a = item.address;
+
+            const road = a.road || a.pedestrian || a.street || a.footway || '';
+            const street = [a.house_number, road].filter(Boolean).join(' ');
+            const city = a.city || a.town || a.village || a.municipality || a.hamlet || '';
+            const stateName = a.state || '';
+            const zip = a.postcode || '';
+            const stateZip = [stateName, zip].filter(Boolean).join(' ');
+
+            const segments = [];
+            if (street) {
+                segments.push(street);
+            } else if (item.name && item.name !== city && item.name !== stateName) {
+                segments.push(item.name);
+            }
+
+            if (city) segments.push(city);
+            if (stateZip) segments.push(stateZip);
+
+            return segments.length > 0 ? segments.join(', ') : item.display_name;
+        }
+
+        function handleAutocomplete(inputField, listId) {
+            inputField.removeAttribute('data-lat');
+            inputField.removeAttribute('data-lon');
+            hideError();
+            
+            clearTimeout(debounceTimer);
+            const query = inputField.value.trim();
+            const list = document.getElementById(listId);
+            
+            if (query.length < 3) {
+                list.innerHTML = '';
+                return;
+            }
+            
+            debounceTimer = setTimeout(async () => {
+                if (autocompleteController) autocompleteController.abort();
+                autocompleteController = new AbortController();
+
+                const cacheKey = `geo_${query.toLowerCase()}`;
+                try {
+                    let data;
+                    if (geocodeCache.has(cacheKey)) {
+                        data = geocodeCache.get(cacheKey);
+                    } else {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&countrycodes=us&q=${encodeURIComponent(query)}`, {
+                            signal: autocompleteController.signal
+                        });
+                        data = await res.json();
+                        geocodeCache.set(cacheKey, data);
+                    }
+
+                    list.innerHTML = '';
+                    const seen = new Set();
+
+                    data.forEach(item => {
+                        const cleanAddress = formatCleanAddress(item);
+                        if (!cleanAddress || seen.has(cleanAddress)) return;
+                        seen.add(cleanAddress);
+
+                        const div = document.createElement("div");
+                        div.innerText = cleanAddress;
+                        div.addEventListener('click', () => {
+                            inputField.value = cleanAddress;
+                            inputField.setAttribute('data-lat', item.lat);
+                            inputField.setAttribute('data-lon', item.lon);
+                            list.innerHTML = '';
+                        });
+                        list.appendChild(div);
+                    });
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.error("Autocomplete error:", error);
+                    }
+                }
+            }, 400); 
+        }
+
+        function setupAutocompleteKeyboard(inputField, listId) {
+            inputField.addEventListener('keydown', (e) => {
+                const list = document.getElementById(listId);
+                if (!list) return;
+                const items = list.querySelectorAll('div');
+                if (!items.length) return;
+
+                let activeIndex = Array.from(items).findIndex(div => div.classList.contains('autocomplete-active'));
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (activeIndex > -1) items[activeIndex].classList.remove('autocomplete-active');
+                    activeIndex = (activeIndex + 1) % items.length;
+                    items[activeIndex].classList.add('autocomplete-active');
+                    items[activeIndex].scrollIntoView({ block: 'nearest' });
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (activeIndex > -1) items[activeIndex].classList.remove('autocomplete-active');
+                    activeIndex = (activeIndex - 1 + items.length) % items.length;
+                    items[activeIndex].classList.add('autocomplete-active');
+                    items[activeIndex].scrollIntoView({ block: 'nearest' });
+                } else if (e.key === 'Enter') {
+                    if (activeIndex > -1 && items[activeIndex]) {
+                        e.preventDefault();
+                        items[activeIndex].click();
+                    }
+                } else if (e.key === 'Escape') {
+                    list.innerHTML = '';
+                }
+            });
+        }
+
+        async function getCoordsOrLookup(inputId, signal) {
+            const inputField = document.getElementById(inputId);
+            const lat = inputField.getAttribute('data-lat');
+            const lon = inputField.getAttribute('data-lon');
+            
+            if (lat && lon) return { lat: parseFloat(lat), lon: parseFloat(lon) };
+            
+            const query = inputField.value.trim();
+            if (!query) throw new Error("Location cannot be empty.");
+
+            const cacheKey = `lookup_${query.toLowerCase()}`;
+            let data;
+            if (geocodeCache.has(cacheKey)) {
+                data = geocodeCache.get(cacheKey);
+            } else {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(query)}`, { signal });
+                data = await res.json();
+                geocodeCache.set(cacheKey, data);
+            }
+            
+            if (!data || data.length === 0) throw new Error(`Address not found: "${query}"`);
+            return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+        }
+
+        async function fetchRouteData() {
+            hideError();
+            const start = document.getElementById('startLoc').value.trim();
+            const end = document.getElementById('endLoc').value.trim();
+            const btn = document.getElementById('distBtn');
+
+            if (!start || !end) {
+                showError("Please enter both a start and end location.");
+                return;
+            }
+
+            btn.innerText = "Calculating...";
+            btn.disabled = true;
+
+            if (routeController) routeController.abort();
+            routeController = new AbortController();
+
+            try {
+                const startCoords = await getCoordsOrLookup('startLoc', routeController.signal);
+                const endCoords = await getCoordsOrLookup('endLoc', routeController.signal);
+
+                const startLon = startCoords.lon.toFixed(5);
+                const startLat = startCoords.lat.toFixed(5);
+                const endLon = endCoords.lon.toFixed(5);
+                const endLat = endCoords.lat.toFixed(5);
+
+                const routeRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${endLon},${endLat}?overview=false`, {
+                    signal: routeController.signal
+                });
+                const routeData = await routeRes.json();
+                
+                if (routeData.code !== "Ok") throw new Error("Routing engine could not find a valid driving path between these points.");
+
+                const rawMiles = routeData.routes[0].distance * 0.000621371;
+                const calculatedMiles = roundUpToHalfUnit(rawMiles);
+
+                const seconds = routeData.routes[0].duration;
+                // Apply 0.81 factor only here in the route engine calculation
+                const adjustedHours = (seconds / 3600) * DRIVE_TIME_ADJUSTMENT;
+                const calculatedHours = roundUpToHalfUnit(adjustedHours);
+
+                document.getElementById('miles').value = calculatedMiles.toFixed(1);
+                document.getElementById('hours').value = calculatedHours.toFixed(1);
+
+                state.miles = calculatedMiles;
+                state.hours = calculatedHours;
+                renderCalculation();
+
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    showError(error.message);
+                }
+            } finally {
+                btn.innerText = "Calculate Route";
+                btn.disabled = false;
+            }
+        }
+
+        function copyBreakdown() {
+            const roundtripMultiplier = 2;
+            const milesTotal = Math.ceil(state.miles * roundtripMultiplier);
+            const billableMiles = Math.ceil(Math.max(0, milesTotal - DEDUCTIBLE_MILES));
+            const totalMileCost = billableMiles * state.mileRate;
+
+            const billableHours = Math.ceil(state.hours * roundtripMultiplier);
+            const totalHourCost = billableHours * state.hourRate;
+
+            let deductionText = "";
+            if (milesTotal > 0 && milesTotal < DEDUCTIBLE_MILES) {
+                deductionText = `${wholeNumberFormatter.format(milesTotal)} - ${wholeNumberFormatter.format(milesTotal)} non-billable = ${wholeNumberFormatter.format(billableMiles)} billable miles`;
+            } else {
+                deductionText = `${wholeNumberFormatter.format(milesTotal)} - ${DEDUCTIBLE_MILES.toFixed(0)} non-billable = ${wholeNumberFormatter.format(billableMiles)} billable miles`;
+            }
+
+            let lines = [
+                `Mileage Cost: ${currencyFormatter.format(totalMileCost)}`,
+                `${state.miles.toFixed(1)} One Way miles × 2 = ${wholeNumberFormatter.format(milesTotal)} RT total miles`,
+                deductionText,
+                `${wholeNumberFormatter.format(billableMiles)} billable miles × ${rateFormatter.format(state.mileRate)}`,
+                "",
+                `Driving Time Cost: ${currencyFormatter.format(totalHourCost)}`,
+                `${state.hours.toFixed(1)} One Way hrs × 2 = ${wholeNumberFormatter.format(billableHours)} billable hours`,
+                `${wholeNumberFormatter.format(billableHours)} billable hrs × ${currencyFormatter.format(state.hourRate)}/hr`
+            ];
+
+            let totalAdditional = 0;
+            if (state.expenses.length > 0) {
+                const validExpenses = state.expenses.filter(e => e.cost > 0);
+                if (validExpenses.length > 0) {
+                    lines.push("");
+                    lines.push("Additional Expenses:");
+                    validExpenses.forEach(e => {
+                        totalAdditional += e.cost;
+                        lines.push(`${e.name || "Item"}: ${currencyFormatter.format(e.cost)}`);
+                    });
+                }
+            }
+
+            const grandTotal = totalMileCost + totalHourCost + totalAdditional;
+            lines.push("");
+            lines.push(`Grand Total: ${currencyFormatter.format(grandTotal)}`);
+
+            const textToCopy = lines.join("\n");
+            const btn = document.getElementById('copyBtn');
+
+            const showSuccess = () => {
+                btn.innerText = "Copied!";
+                btn.classList.add('success');
+                setTimeout(() => {
+                    btn.innerText = "Copy to Clipboard";
+                    btn.classList.remove('success');
+                }, 2000);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(showSuccess).catch(() => fallbackCopy(textToCopy, showSuccess));
+            } else {
+                fallbackCopy(textToCopy, showSuccess);
+            }
+        }
+
+        function fallbackCopy(text, onSuccess) {
+            try {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                if (successful) onSuccess();
+                else throw new Error("execCommand copy returned false");
+            } catch (err) {
+                console.error("Fallback copy failed: ", err);
+                alert("Clipboard access denied. You can manually highlight and copy the text.");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateThemeToggleButton();
+
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (!localStorage.getItem('costCalc_theme')) {
+                    updateThemeToggleButton();
+                }
+            });
+
+            const savedStart = localStorage.getItem('costCalc_startAddress') ?? FALLBACK_START_ADDRESS;
+            document.getElementById('startLoc').value = savedStart;
+            document.getElementById('defaultStartInput').value = savedStart;
+
+            const savedMileRate = localStorage.getItem('costCalc_mileRate');
+            if (savedMileRate) {
+                state.mileRate = parseFloat(savedMileRate) || 0.725;
+                document.getElementById('customMileRate').value = state.mileRate;
+            }
+
+            const savedHourRate = localStorage.getItem('costCalc_hourRate');
+            if (savedHourRate) {
+                state.hourRate = parseFloat(savedHourRate) || 37.50;
+                document.getElementById('customHourRate').value = state.hourRate;
+            }
+
+            document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+            document.getElementById('settingsToggleBtn').addEventListener('click', toggleRateSettings);
+            document.getElementById('customMileRate').addEventListener('input', saveRatesAndRecalculate);
+            document.getElementById('customHourRate').addEventListener('input', saveRatesAndRecalculate);
+            document.getElementById('saveDefaultStartBtn').addEventListener('click', saveDefaultStartLocation);
+            document.getElementById('useCurrentStartBtn').addEventListener('click', useCurrentStartLocation);
+            document.getElementById('distBtn').addEventListener('click', fetchRouteData);
+            document.getElementById('resetBtn').addEventListener('click', resetCalculator);
+            document.getElementById('addExpenseBtn').addEventListener('click', addExpenseRow);
+            document.getElementById('copyBtn').addEventListener('click', copyBreakdown);
+
+            const milesInput = document.getElementById('miles');
+            const hoursInput = document.getElementById('hours');
+
+            // Handle manual typing into inputs (immediate live math)
+            function handleManualLiveInput(inputEl, stateProp) {
+                const val = parseFloat(inputEl.value);
+                if (isNaN(val) || val <= 0) {
+                    state[stateProp] = 0;
+                } else {
+                    state[stateProp] = roundUpToHalfUnit(val);
+                }
+                renderCalculation();
+            }
+
+            // Snap input field to .0 or .5 on change / blur
+            function handleManualCommit(inputEl, stateProp) {
+                const val = parseFloat(inputEl.value);
+                if (!isNaN(val) && val > 0) {
+                    const rounded = roundUpToHalfUnit(val);
+                    state[stateProp] = rounded;
+                    inputEl.value = rounded.toFixed(1);
+                } else {
+                    state[stateProp] = 0;
+                    inputEl.value = '';
+                }
+                renderCalculation();
+            }
+
+            milesInput.addEventListener('input', () => handleManualLiveInput(milesInput, 'miles'));
+            milesInput.addEventListener('change', () => handleManualCommit(milesInput, 'miles'));
+            milesInput.addEventListener('blur', () => handleManualCommit(milesInput, 'miles'));
+
+            hoursInput.addEventListener('input', () => handleManualLiveInput(hoursInput, 'hours'));
+            hoursInput.addEventListener('change', () => handleManualCommit(hoursInput, 'hours'));
+            hoursInput.addEventListener('blur', () => handleManualCommit(hoursInput, 'hours'));
+
+            const startLocInput = document.getElementById('startLoc');
+            const endLocInput = document.getElementById('endLoc');
+            const defaultStartInput = document.getElementById('defaultStartInput');
+
+            startLocInput.addEventListener('input', (e) => handleAutocomplete(e.target, 'startList'));
+            endLocInput.addEventListener('input', (e) => handleAutocomplete(e.target, 'endList'));
+            defaultStartInput.addEventListener('input', (e) => handleAutocomplete(e.target, 'defaultStartList'));
+
+            setupAutocompleteKeyboard(startLocInput, 'startList');
+            setupAutocompleteKeyboard(endLocInput, 'endList');
+            setupAutocompleteKeyboard(defaultStartInput, 'defaultStartList');
+
+            const expenseContainer = document.getElementById('additional-expenses-container');
+            expenseContainer.addEventListener('input', (e) => {
+                const row = e.target.closest('.expense-row');
+                if (!row) return;
+                const id = parseInt(row.dataset.id, 10);
+                const expenseItem = state.expenses.find(item => item.id === id);
+                if (!expenseItem) return;
+
+                if (e.target.classList.contains('expense-name')) {
+                    expenseItem.name = e.target.value.trim();
+                } else if (e.target.classList.contains('expense-cost')) {
+                    expenseItem.cost = parseFloat(e.target.value) || 0;
+                }
+                renderCalculation();
+            });
+
+            expenseContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-btn')) {
+                    const row = e.target.closest('.expense-row');
+                    if (!row) return;
+                    const id = parseInt(row.dataset.id, 10);
+                    state.expenses = state.expenses.filter(item => item.id !== id);
+                    row.remove();
+                    renderCalculation();
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (e.target.id !== "startLoc") document.getElementById("startList").innerHTML = "";
+                if (e.target.id !== "endLoc") document.getElementById("endList").innerHTML = "";
+                if (e.target.id !== "defaultStartInput") document.getElementById("defaultStartList").innerHTML = "";
+            });
+        });
+    </script>
+</body>
+</html>
