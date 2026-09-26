@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Locale
 import kotlin.math.roundToInt
 
 data class Expense(val name: String, val cost: String)
@@ -32,6 +33,9 @@ data class CalculatorState(
     val baseHours: String = "",
     
     val additionalExpenses: List<Expense> = emptyList(),
+
+    val ratePerMile: Double = 0.725,
+    val ratePerHour: Double = 37.50,
     
     val isLoading: Boolean = false,
     val errorMessage: String? = null
@@ -54,9 +58,9 @@ fun formatHalf(value: Double): String {
     val rounded = roundUpToHalf(value)
     if (rounded <= 0.0) return ""
     return if (rounded % 1.0 == 0.0) {
-        "%.0f".format(rounded)
+        String.format(Locale.US, "%.0f", rounded)
     } else {
-        "%.1f".format(rounded)
+        String.format(Locale.US, "%.1f", rounded)
     }
 }
 
@@ -67,13 +71,21 @@ class CostCalculatorViewModel : ViewModel() {
     private var startSearchJob: Job? = null
     private var endSearchJob: Job? = null
 
-    val RATE_PER_MILE = 0.725
-    val RATE_PER_HOUR = 37.50
     val DRIVE_TIME_ADJUSTMENT = 0.85
 
     private var isSettingsInitialized = false
 
     fun initDefaultSettings(settingsManager: SettingsManager) {
+        viewModelScope.launch {
+            settingsManager.ratePerMile.collect { rate ->
+                _state.update { it.copy(ratePerMile = rate) }
+            }
+        }
+        viewModelScope.launch {
+            settingsManager.ratePerHour.collect { rate ->
+                _state.update { it.copy(ratePerHour = rate) }
+            }
+        }
         if (isSettingsInitialized) return
         isSettingsInitialized = true
         val defaultAddr = settingsManager.defaultStartAddress.value
@@ -171,8 +183,8 @@ class CostCalculatorViewModel : ViewModel() {
                     throw Exception("Could not find location for destination address: '$endQ'. Please check spelling or select from suggestions.")
                 }
 
-                // OSRM strictly requires lon,lat order
-                val coordsString = "${"%.5f".format(startCoords.lon)},${"%.5f".format(startCoords.lat)};${"%.5f".format(endCoords.lon)},${"%.5f".format(endCoords.lat)}"
+                // OSRM strictly requires lon,lat order with standard dot decimal formatting
+                val coordsString = String.format(Locale.US, "%.5f,%.5f;%.5f,%.5f", startCoords.lon, startCoords.lat, endCoords.lon, endCoords.lat)
                 
                 val response = NetworkClient.osrmApi.getRoute(coordsString)
                 if (response.code != "Ok" || response.routes.isNullOrEmpty()) {
